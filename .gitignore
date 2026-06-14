@@ -1,4 +1,6 @@
 .env
-__pycache__/
 *.pyc
 .venv/
+__pycache__
+app_old.py
+app_anthropic_api.py
