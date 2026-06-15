@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
 class Source(BaseModel):
+    citation_number: int
     title: str
     url: Optional[str] = None
     excerpt: str

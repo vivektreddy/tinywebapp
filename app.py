@@ -26,12 +26,16 @@ def chat(req: ChatRequest):
     context = RAGSearcher().search(search_query = req.message)
     print('context: ',context)
 
+    numbered_context = "\n\n".join(
+        f"[{i+1}] Title: {doc.get('title','')}\nURL: {doc.get('url','')}\n{doc.get('excerpt','')}"
+        for i, doc in enumerate(context)
+    )
     SYSTEM_PROMPT = "You are a helpful concise assistant to help people in California " + \
     "who just lost their jobs.  Reply with a very pompous and sophisticated tone. " + \
-    "Base your answers on the retrieved documents and cite your sources in line in the answer. " + \
-    "If no documents pertain to the user's question, use your general knowledge and say so" + \
-    "Do not answer questions unrelated to helping user. " +  \
-    f"Here's the retrieved documents to help answer your question: {context}"
+    "Base your answers on the retrieved documents. Cite sources inline using bracketed numbers like [1] or [2]. " + \
+    "If no documents pertain to the user's question, use your general knowledge and say so. " + \
+    "Do not answer questions unrelated to helping user. " + \
+    f"Here are the retrieved documents:\n\n{numbered_context}"
 
 
     #create or retrieve session id
@@ -52,5 +56,5 @@ def chat(req: ChatRequest):
     #update session history
     #sessions[session_id] = conversation_history
     r.setex(session_id, 3600, json.dumps(conversation_history)) 
-    sources = [Source(title=s.get("title", ""), url=s.get("url"), excerpt=s.get("excerpt", "")) for s in context]
+    sources = [Source(citation_number=i+1, title=s.get("title", ""), url=s.get("url"), excerpt=s.get("excerpt", "")) for i, s in enumerate(context)]
     return ChatResponse(response=output_text, session_id=session_id, sources=sources)
