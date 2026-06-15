@@ -4,6 +4,7 @@ from typing import List, Dict
 from dotenv import load_dotenv
 from openai import OpenAI
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import boto3
 from schemas import Source, ChatRequest, ChatResponse
 from uuid import uuid4
@@ -15,6 +16,13 @@ load_dotenv()
 client = boto3.client("bedrock-runtime", region_name = settings.AWS_REGION)
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 #sessions = {}
 r = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
