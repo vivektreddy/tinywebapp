@@ -13,7 +13,9 @@ class Settings:
     AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
     DEFAULT_MODEL = BedrockModel.SONNET
     DEFAULT_RERANK_MODEL = ""
-    PINECONE_TOP_K = 10
+    PINECONE_FETCH_K = 20
+    PINECONE_TOP_K = 6
+    PINECONE_SCORE_THRESHOLD = 0.75
     PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
     PINECONE_INDEX = os.getenv("PINECONE_INDEX")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

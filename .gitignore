@@ -4,3 +4,4 @@
 __pycache__
 app_old.py
 app_anthropic_api.py
+scripts/data/
