@@ -22,6 +22,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Session-Id", "X-Sources"],
 )
 
 #sessions = {}
@@ -74,5 +75,15 @@ async def chat(req: ChatRequest):
         final_text = "".join(full_text)
         conversation_history.append({'role':'assistant', 'content':final_text})
         r.setex(session_id, 3600, json.dumps(conversation_history)) 
-    #sources = [Source(citation_number=i+1, title=s.get("title", ""), url=s.get("url"), excerpt=s.get("excerpt", "")) for i, s in enumerate(context)]
-    return StreamingResponse(stream(), media_type = "text/plain")
+    sources = [
+        {"citation_number": i+1, "title": d.get("title",""), "url": d.get("url",""), "excerpt": d.get("excerpt","")}
+        for i, d in enumerate(context)
+    ]
+    return StreamingResponse(
+        stream(),
+        media_type="text/plain",
+        headers={
+            "X-Session-Id": session_id,
+            "X-Sources": json.dumps(sources),
+        },
+    )

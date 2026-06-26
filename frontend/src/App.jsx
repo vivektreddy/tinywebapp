@@ -86,13 +86,29 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, session_id: sessionId }),
       })
-      const data = await res.json()
-      setSessionId(data.session_id)
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.response,
-        sources: data.sources,
-      }])
+
+      const newSessionId = res.headers.get('x-session-id')
+      const sources = JSON.parse(res.headers.get('x-sources') || '[]')
+      if (newSessionId) setSessionId(newSessionId)
+
+      setMessages(prev => [...prev, { role: 'assistant', content: '', sources }])
+      setLoading(false)
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = decoder.decode(value, { stream: true })
+        setMessages(prev => {
+          const msgs = [...prev]
+          msgs[msgs.length - 1] = {
+            ...msgs[msgs.length - 1],
+            content: msgs[msgs.length - 1].content + chunk,
+          }
+          return msgs
+        })
+      }
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
