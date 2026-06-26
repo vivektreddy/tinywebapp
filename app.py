@@ -2,9 +2,9 @@ import os, json
 import redis
 from typing import List, Dict
 from dotenv import load_dotenv
-from openai import OpenAI
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 import boto3
 from schemas import Source, ChatRequest, ChatResponse
 from uuid import uuid4
@@ -27,9 +27,8 @@ app.add_middleware(
 #sessions = {}
 r = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
 
-@app.post("/chat",response_model = ChatResponse)
-def chat(req: ChatRequest):
-    
+@app.post("/chat")
+async def chat(req: ChatRequest):
 
     context = RAGSearcher().search(search_query = req.message)
     print('context: ',context)
@@ -39,7 +38,7 @@ def chat(req: ChatRequest):
         for i, doc in enumerate(context)
     )
     SYSTEM_PROMPT = "You are a helpful concise assistant to help people in California " + \
-    "who just lost their jobs.  Reply with a very pompous and sophisticated tone. " + \
+    "who just lost their jobs.  Reply with a very pompous and condescending tone. " + \
     "Base your answers on the retrieved documents. Cite sources inline using bracketed numbers like [1] or [2]. " + \
     "If no documents pertain to the user's question, use your general knowledge and say so. " + \
     "Do not answer questions unrelated to helping user. " + \
@@ -56,13 +55,24 @@ def chat(req: ChatRequest):
     #put in proper bedrock message format
     bedrock_messages = [{'role':msg['role'], 'content': [{'text': msg['content']}]} for msg in conversation_history]
     #call bedrock model and append result
-    response = client.converse(modelId = settings.DEFAULT_MODEL.value, \
-    messages = bedrock_messages, \
-    system = [{'text':SYSTEM_PROMPT}],inferenceConfig = {'maxTokens':1024,'temperature':0.2})
-    output_text =  response["output"]["message"]["content"][0]["text"]
-    conversation_history.append({'role':'assistant', 'content':output_text})
-    #update session history
-    #sessions[session_id] = conversation_history
-    r.setex(session_id, 3600, json.dumps(conversation_history)) 
-    sources = [Source(citation_number=i+1, title=s.get("title", ""), url=s.get("url"), excerpt=s.get("excerpt", "")) for i, s in enumerate(context)]
-    return ChatResponse(response=output_text, session_id=session_id, sources=sources)
+
+
+    def stream():
+        full_text = []
+        response = client.converse_stream(modelId = settings.DEFAULT_MODEL.value, \
+        messages = bedrock_messages, \
+        system = [{'text':SYSTEM_PROMPT}],\
+        inferenceConfig = {'maxTokens':1024,'temperature':0.2})
+
+        for event in response["stream"]:
+            if "contentBlockDelta" in event:
+                delta = event["contentBlockDelta"]["delta"]
+                text = delta.get("text","")
+                if text:
+                    full_text.append(text)
+                    yield text
+        final_text = "".join(full_text)
+        conversation_history.append({'role':'assistant', 'content':final_text})
+        r.setex(session_id, 3600, json.dumps(conversation_history)) 
+    #sources = [Source(citation_number=i+1, title=s.get("title", ""), url=s.get("url"), excerpt=s.get("excerpt", "")) for i, s in enumerate(context)]
+    return StreamingResponse(stream(), media_type = "text/plain")
