@@ -65,6 +65,7 @@ export default function App() {
   const [input, setInput] = useState('')
   const [sessionId, setSessionId] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [searchingFor, setSearchingFor] = useState(null)
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -96,10 +97,19 @@ export default function App() {
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
+      let firstChunk = true
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        const chunk = decoder.decode(value, { stream: true })
+        let chunk = decoder.decode(value, { stream: true })
+        if (firstChunk && chunk.startsWith('__status__:')) {
+          const query = chunk.replace('__status__:', '').replace('\n', '')
+          setSearchingFor(query)
+          firstChunk = false
+          continue
+        }
+        firstChunk = false
+        setSearchingFor(null)
         setMessages(prev => {
           const msgs = [...prev]
           msgs[msgs.length - 1] = {
@@ -109,6 +119,7 @@ export default function App() {
           return msgs
         })
       }
+      setSearchingFor(null)
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
@@ -154,6 +165,13 @@ export default function App() {
           <div className="message-row assistant">
             <div className="bubble assistant loading">
               <span /><span /><span />
+            </div>
+          </div>
+        )}
+        {searchingFor && (
+          <div className="message-row assistant">
+            <div className="bubble assistant" style={{ fontStyle: 'italic', opacity: 0.7, fontSize: '0.85em' }}>
+              Searching: "{searchingFor}"…
             </div>
           </div>
         )}

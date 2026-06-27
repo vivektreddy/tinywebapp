@@ -82,6 +82,7 @@ def chat(req: ChatRequest):
         tool_block = next(b['toolUse'] for b in phase1['output']['message']['content'] if 'toolUse' in b)
         query = tool_block['input']['query']
         tool_use_id = tool_block['toolUseId']
+        print(f"[tool_use] rag_search query: {query}")
 
         context = RAGSearcher().search(search_query=query)
         sources = [
@@ -106,6 +107,7 @@ def chat(req: ChatRequest):
             full_text.append(text)
             yield text
         else:
+            yield f"__status__:{query}\n"
             # Stream Claude's response after seeing tool results
             resp = client.converse_stream(
                 modelId=settings.DEFAULT_MODEL.value,
