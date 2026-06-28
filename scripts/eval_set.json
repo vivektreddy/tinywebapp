@@ -1,0 +1,142 @@
+[
+  {
+    "id": "calfresh-apply",
+    "category": "CalFresh",
+    "question": "How do I apply for CalFresh food assistance?",
+    "expected_urls": ["https://www.cdss.ca.gov/food-nutrition"],
+    "key_facts": ["BenefitsCal.com", "county social services"]
+  },
+  {
+    "id": "calfresh-eligibility",
+    "category": "CalFresh",
+    "question": "Who is eligible for CalFresh benefits?",
+    "expected_urls": ["https://www.cdss.ca.gov/food-nutrition"],
+    "key_facts": ["low income", "federal eligibility"]
+  },
+  {
+    "id": "ui-apply",
+    "category": "Unemployment",
+    "question": "How do I file for unemployment insurance in California?",
+    "expected_urls": ["https://edd.ca.gov/en/unemployment/"],
+    "key_facts": ["EDD", "UI Online"]
+  },
+  {
+    "id": "ui-eligibility",
+    "category": "Unemployment",
+    "question": "Am I eligible for unemployment benefits if I was laid off?",
+    "expected_urls": ["https://edd.ca.gov/en/unemployment/eligibility/"],
+    "key_facts": ["laid off", "base period", "wages"]
+  },
+  {
+    "id": "sdi-what",
+    "category": "Disability",
+    "question": "What is State Disability Insurance in California?",
+    "expected_urls": ["https://edd.ca.gov/en/disability/"],
+    "key_facts": ["SDI", "short-term disability", "wage replacement"]
+  },
+  {
+    "id": "sdi-eligibility",
+    "category": "Disability",
+    "question": "Do I qualify for disability benefits if I can't work due to illness?",
+    "expected_urls": ["https://edd.ca.gov/en/disability/"],
+    "key_facts": ["SDI", "disability", "medical condition"]
+  },
+  {
+    "id": "pfl-apply",
+    "category": "Paid Family Leave",
+    "question": "How do I apply for paid family leave to care for a sick parent?",
+    "expected_urls": ["https://edd.ca.gov/en/disability/paid-family-leave/"],
+    "key_facts": ["Paid Family Leave", "PFL", "caregiver"]
+  },
+  {
+    "id": "calworks-what",
+    "category": "CalWORKs",
+    "question": "What is CalWORKs and who does it help?",
+    "expected_urls": ["https://www.cdss.ca.gov/calworks"],
+    "key_facts": ["cash aid", "families", "children"]
+  },
+  {
+    "id": "calworks-apply",
+    "category": "CalWORKs",
+    "question": "How do I apply for CalWORKs cash assistance?",
+    "expected_urls": ["https://www.cdss.ca.gov/calworks", "https://www.cdss.ca.gov/cash-assistance"],
+    "key_facts": ["BenefitsCal.com", "county office"]
+  },
+  {
+    "id": "wic-eligibility",
+    "category": "WIC",
+    "question": "Am I eligible for WIC benefits as a pregnant woman who just lost her job?",
+    "expected_urls": ["https://www.cdss.ca.gov/inforesources/cdss-programs/wic"],
+    "key_facts": ["WIC", "pregnant", "nutrition"]
+  },
+  {
+    "id": "covered-ca-enroll",
+    "category": "Health",
+    "question": "How do I get health insurance through Covered California?",
+    "expected_urls": ["https://www.coveredca.com/learn/how-it-works/"],
+    "key_facts": ["Covered California", "enrollment", "subsidy"]
+  },
+  {
+    "id": "covered-ca-eligibility",
+    "category": "Health",
+    "question": "Who can enroll in Covered California health plans?",
+    "expected_urls": ["https://www.coveredca.com/support/before-you-buy/who-can-enroll/"],
+    "key_facts": ["California resident", "legal status", "citizenship"]
+  },
+  {
+    "id": "care-fera",
+    "category": "Utilities",
+    "question": "How can I reduce my electric bill after losing my job?",
+    "expected_urls": ["https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-costs/care-fera-program"],
+    "key_facts": ["CARE", "FERA", "discount", "utility"]
+  },
+  {
+    "id": "job-training",
+    "category": "Employment",
+    "question": "What job training programs are available for laid-off workers in California?",
+    "expected_urls": ["https://edd.ca.gov/en/jobs_and_training/"],
+    "key_facts": ["CalJOBS", "job seeker", "training"]
+  },
+  {
+    "id": "general-assistance",
+    "category": "General Assistance",
+    "question": "I don't qualify for CalWORKs. Is there any other cash assistance available?",
+    "expected_urls": ["https://www.cdss.ca.gov/inforesources/cdss-programs/general-assistance-general-relief"],
+    "key_facts": ["General Assistance", "General Relief", "county"]
+  },
+  {
+    "id": "food-bank",
+    "category": "Food",
+    "question": "Where can I find a food bank near me in California?",
+    "expected_urls": ["https://www.cdss.ca.gov/food-nutrition"],
+    "key_facts": ["food bank", "county"]
+  },
+  {
+    "id": "multi-program",
+    "category": "Multi-program",
+    "question": "I just got laid off in California. What benefits am I entitled to?",
+    "expected_urls": ["https://edd.ca.gov/en/unemployment/", "https://www.cdss.ca.gov/calfresh"],
+    "key_facts": ["unemployment", "EDD"]
+  },
+  {
+    "id": "pfl-bonding",
+    "category": "Paid Family Leave",
+    "question": "Can I take paid leave to bond with my new baby?",
+    "expected_urls": ["https://edd.ca.gov/en/disability/paid-family-leave/"],
+    "key_facts": ["Paid Family Leave", "bonding", "baby", "newborn"]
+  },
+  {
+    "id": "ebt-card",
+    "category": "CalFresh",
+    "question": "How does the EBT card work for CalFresh?",
+    "expected_urls": ["https://www.cdss.ca.gov/calfresh", "https://www.cdss.ca.gov/food-nutrition"],
+    "key_facts": ["EBT", "electronic", "benefits"]
+  },
+  {
+    "id": "off-topic",
+    "category": "Off-topic",
+    "question": "What is the best restaurant in San Francisco?",
+    "expected_urls": [],
+    "key_facts": []
+  }
+]
