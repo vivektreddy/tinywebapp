@@ -89,10 +89,9 @@ export default function App() {
       })
 
       const newSessionId = res.headers.get('x-session-id')
-      const sources = JSON.parse(res.headers.get('x-sources') || '[]')
       if (newSessionId) setSessionId(newSessionId)
 
-      setMessages(prev => [...prev, { role: 'assistant', content: '', sources }])
+      setMessages(prev => [...prev, { role: 'assistant', content: '', sources: [] }])
       setLoading(false)
 
       const reader = res.body.getReader()
@@ -102,6 +101,7 @@ export default function App() {
         const { done, value } = await reader.read()
         if (done) break
         let chunk = decoder.decode(value, { stream: true })
+
         if (firstChunk && chunk.startsWith('__status__:')) {
           const query = chunk.replace('__status__:', '').replace('\n', '')
           setSearchingFor(query)
@@ -110,6 +110,29 @@ export default function App() {
         }
         firstChunk = false
         setSearchingFor(null)
+
+        if (chunk.includes('\n__sources__:')) {
+          const idx = chunk.indexOf('\n__sources__:')
+          const textPart = chunk.slice(0, idx)
+          const sourcesPart = chunk.slice(idx + '\n__sources__:'.length)
+          if (textPart) {
+            setMessages(prev => {
+              const msgs = [...prev]
+              msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: msgs[msgs.length - 1].content + textPart }
+              return msgs
+            })
+          }
+          try {
+            const sources = JSON.parse(sourcesPart.trim())
+            setMessages(prev => {
+              const msgs = [...prev]
+              msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], sources }
+              return msgs
+            })
+          } catch {}
+          continue
+        }
+
         setMessages(prev => {
           const msgs = [...prev]
           msgs[msgs.length - 1] = {
