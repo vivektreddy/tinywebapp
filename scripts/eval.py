@@ -1,43 +1,24 @@
-"""Eval script: scores retrieval recall and response quality via LLM-as-judge."""
+"""Unit eval: scores retrieval recall and response quality via LLM-as-judge.
+
+Calls RAGSearcher directly and injects context into the prompt — no tool use.
+This isolates retrieval quality from the tool invocation decision.
+
+Usage:
+  python scripts/eval.py
+"""
 import json, sys
 from datetime import datetime
 from pathlib import Path
-from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent.parent / ".env")
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import boto3
 from rag_search import RAGSearcher
 from config import settings
-
-EVAL_SET = Path(__file__).parent / "eval_set.json"
-RESULTS_DIR = Path(__file__).parent / "data"
-RESULTS_DIR.mkdir(exist_ok=True)
-
-SYSTEM_PROMPT_TEMPLATE = (
-    "You are a helpful concise assistant to help people in California who just lost their jobs. "
-    "Base your answers on the retrieved documents. Cite sources inline using bracketed numbers like [1] or [2]. "
-    "If no documents pertain to the user's question, use your general knowledge and say so. "
-    "Do not answer questions unrelated to helping user. "
-    "Here are the retrieved documents:\n\n{context}"
+from eval_common import (
+    EVAL_SET, RESULTS_DIR, SYSTEM_PROMPT_TEMPLATE,
+    score_retrieval, judge_response,
 )
-
-JUDGE_SYSTEM = (
-    "You are an evaluator for a California benefits chatbot. "
-    "Score the response on three dimensions (1-5 each):\n"
-    "- relevance: Does the response directly answer the question asked?\n"
-    "- accuracy: Is the information factually correct based on the retrieved sources?\n"
-    "- completeness: Does it cover the main aspects of the question?\n\n"
-    'Return ONLY valid JSON: {"relevance": N, "accuracy": N, "completeness": N, "reasoning": "..."}'
-)
-
-
-def score_retrieval(retrieved_urls: list, expected_urls: list):
-    if not expected_urls:
-        return None
-    found = sum(1 for u in expected_urls if u in retrieved_urls)
-    return found / len(expected_urls)
 
 
 def get_response(question: str, context: list) -> str:
@@ -53,26 +34,6 @@ def get_response(question: str, context: list) -> str:
         inferenceConfig={"maxTokens": 1024, "temperature": 0.2},
     )
     return resp["output"]["message"]["content"][0]["text"]
-
-
-def judge_response(question: str, response_text: str, context: list) -> dict:
-    client = boto3.client("bedrock-runtime", region_name=settings.AWS_REGION)
-    sources_summary = "\n".join(f"- {d['title']} ({d['url']})" for d in context)
-    judge_input = (
-        f"Question: {question}\n\n"
-        f"Retrieved sources:\n{sources_summary}\n\n"
-        f"Response to evaluate:\n{response_text}"
-    )
-    resp = client.converse(
-        modelId=settings.DEFAULT_MODEL.value,
-        messages=[{"role": "user", "content": [{"text": judge_input}]}],
-        system=[{"text": JUDGE_SYSTEM}],
-        inferenceConfig={"maxTokens": 256, "temperature": 0.0},
-    )
-    try:
-        return json.loads(resp["output"]["message"]["content"][0]["text"])
-    except Exception:
-        return {"relevance": 0, "accuracy": 0, "completeness": 0, "reasoning": "parse error"}
 
 
 def main():
@@ -113,7 +74,7 @@ def main():
     print(f"{'AVERAGE':<25} {avg_recall:>7.0%} {avg_rel:>5.1f} {avg_acc:>5.1f} {avg_comp:>6.1f}")
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out = RESULTS_DIR / f"eval_results_{timestamp}.json"
+    out = RESULTS_DIR / f"eval_results_unit_{timestamp}.json"
     out.write_text(json.dumps(results, indent=2))
     print(f"\nResults saved to {out}")
 

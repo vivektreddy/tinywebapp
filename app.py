@@ -69,71 +69,75 @@ def chat(req: ChatRequest):
     session_id = req.session_id or str(uuid4())
 
     def stream():
-        raw = r.get(session_id)
-        conversation_history = json.loads(raw) if raw else []
-        conversation_history.append({'role': 'user', 'content': req.message})
-        bedrock_messages = [{'role': m['role'], 'content': [{'text': m['content']}]} for m in conversation_history]
-
         sources = []
+        try:
+            raw = r.get(session_id)
+            conversation_history = json.loads(raw) if raw else []
+            conversation_history.append({'role': 'user', 'content': req.message})
+            bedrock_messages = [{'role': m['role'], 'content': [{'text': m['content']}]} for m in conversation_history]
 
-        # Phase 1: let Claude decide whether to search
-        phase1 = client.converse(
-            modelId=settings.DEFAULT_MODEL.value,
-            messages=bedrock_messages,
-            system=[{'text': SYSTEM_PROMPT}],
-            toolConfig=TOOL_CONFIG,
-            inferenceConfig={'maxTokens': 1024, 'temperature': 0.2},
-        )
-
-        if phase1['stopReason'] == 'tool_use':
-            tool_block = next(b['toolUse'] for b in phase1['output']['message']['content'] if 'toolUse' in b)
-            query = tool_block['input']['query']
-            tool_use_id = tool_block['toolUseId']
-            print(f"[tool_use] rag_search query: {query}")
-
-            yield f"__status__:{query}\n"
-
-            context = RAGSearcher().search(search_query=query)
-            sources = [
-                {"citation_number": i+1, "title": d.get("title",""), "url": d.get("url",""), "excerpt": d.get("excerpt","")}
-                for i, d in enumerate(context)
-            ]
-            numbered_context = "\n\n".join(
-                f"[{i+1}] Title: {d['title']}\nURL: {d['url']}\n{d['excerpt']}"
-                for i, d in enumerate(context)
-            )
-
-            bedrock_messages = bedrock_messages + [
-                {'role': 'assistant', 'content': phase1['output']['message']['content']},
-                {'role': 'user', 'content': [{'toolResult': {'toolUseId': tool_use_id, 'content': [{'text': numbered_context}]}}]},
-            ]
-
-        full_text = []
-        if phase1['stopReason'] != 'tool_use':
-            text = phase1['output']['message']['content'][0]['text']
-            full_text.append(text)
-            yield text
-        else:
-            resp = client.converse_stream(
+            # Phase 1: let Claude decide whether to search
+            phase1 = client.converse(
                 modelId=settings.DEFAULT_MODEL.value,
                 messages=bedrock_messages,
                 system=[{'text': SYSTEM_PROMPT}],
                 toolConfig=TOOL_CONFIG,
                 inferenceConfig={'maxTokens': 1024, 'temperature': 0.2},
             )
-            for event in resp["stream"]:
-                if "contentBlockDelta" in event:
-                    text = event["contentBlockDelta"]["delta"].get("text", "")
-                    if text:
-                        full_text.append(text)
-                        yield text
 
-        final_text = "".join(full_text)
-        conversation_history.append({'role': 'assistant', 'content': final_text})
-        r.setex(session_id, 3600, json.dumps(conversation_history))
+            if phase1['stopReason'] == 'tool_use':
+                tool_block = next(b['toolUse'] for b in phase1['output']['message']['content'] if 'toolUse' in b)
+                query = tool_block['input']['query']
+                tool_use_id = tool_block['toolUseId']
+                print(f"[tool_use] rag_search query: {query}")
 
-        # Send sources in-band so the StreamingResponse can be returned immediately
-        yield f"\n__sources__:{json.dumps(sources)}"
+                yield f"__status__:{query}\n"
+
+                context = RAGSearcher().search(search_query=query)
+                sources = [
+                    {"citation_number": i+1, "title": d.get("title",""), "url": d.get("url",""), "excerpt": d.get("excerpt","")}
+                    for i, d in enumerate(context)
+                ]
+                numbered_context = "\n\n".join(
+                    f"[{i+1}] Title: {d['title']}\nURL: {d['url']}\n{d['excerpt']}"
+                    for i, d in enumerate(context)
+                )
+
+                bedrock_messages = bedrock_messages + [
+                    {'role': 'assistant', 'content': phase1['output']['message']['content']},
+                    {'role': 'user', 'content': [{'toolResult': {'toolUseId': tool_use_id, 'content': [{'text': numbered_context}]}}]},
+                ]
+
+            full_text = []
+            if phase1['stopReason'] != 'tool_use':
+                text = phase1['output']['message']['content'][0]['text']
+                full_text.append(text)
+                yield text
+            else:
+                resp = client.converse_stream(
+                    modelId=settings.DEFAULT_MODEL.value,
+                    messages=bedrock_messages,
+                    system=[{'text': SYSTEM_PROMPT}],
+                    toolConfig=TOOL_CONFIG,
+                    inferenceConfig={'maxTokens': 1024, 'temperature': 0.2},
+                )
+                for event in resp["stream"]:
+                    if "contentBlockDelta" in event:
+                        text = event["contentBlockDelta"]["delta"].get("text", "")
+                        if text:
+                            full_text.append(text)
+                            yield text
+
+            final_text = "".join(full_text)
+            conversation_history.append({'role': 'assistant', 'content': final_text})
+            r.setex(session_id, 3600, json.dumps(conversation_history))
+
+        except Exception as e:
+            print(f"[error] stream(): {e}")
+            yield "Sorry, something went wrong. Please try again."
+
+        finally:
+            yield f"\n__sources__:{json.dumps(sources)}"
 
     return StreamingResponse(
         stream(),
