@@ -2,7 +2,8 @@ import time
 from pinecone import Pinecone
 from openai import OpenAI
 from config import settings
-from telemetry import get_tracer, rag_latency_histo
+import telemetry
+from telemetry import get_tracer
 
 
 class RAGSearcher:
@@ -56,5 +57,5 @@ class RAGSearcher:
             }
 
         matches = sorted(seen_urls.values(), key=lambda m: m["score"], reverse=True)[:settings.PINECONE_TOP_K]
-        rag_latency_histo.record(int((time.monotonic() - t_rag) * 1000))
+        telemetry.rag_latency_histo.record(int((time.monotonic() - t_rag) * 1000))
         return [{"excerpt": m["excerpt"], "title": m["title"], "url": m["url"]} for m in matches]

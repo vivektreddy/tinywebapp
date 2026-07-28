@@ -11,11 +11,8 @@ from config import settings
 from rag_search import RAGSearcher
 from opentelemetry import trace, context as otel_context
 from opentelemetry.trace import SpanKind, StatusCode
-from telemetry import (
-    setup_telemetry, get_tracer,
-    chat_request_counter, chat_error_counter, tool_called_counter,
-    phase1_latency_histo,
-)
+import telemetry
+from telemetry import setup_telemetry, get_tracer
 
 load_dotenv()
 setup_telemetry()
@@ -128,7 +125,7 @@ def chat(req: ChatRequest):
                 phase1_span.set_attribute("gen_ai.usage.input_tokens", usage.get("inputTokens", 0))
                 phase1_span.set_attribute("gen_ai.usage.output_tokens", usage.get("outputTokens", 0))
                 phase1_span.set_attribute("gen_ai.response.stop_reason", phase1["stopReason"])
-            phase1_latency_histo.record(int((time.monotonic() - t0) * 1000))
+            telemetry.phase1_latency_histo.record(int((time.monotonic() - t0) * 1000))
 
             if phase1['stopReason'] == 'tool_use':
                 tool_called = True
@@ -187,9 +184,9 @@ def chat(req: ChatRequest):
             conversation_history.append({'role': 'assistant', 'content': final_text})
             r.setex(session_id, 3600, json.dumps(conversation_history))
 
-            chat_request_counter.add(1, {"tool_called": str(tool_called)})
+            telemetry.chat_request_counter.add(1, {"tool_called": str(tool_called)})
             if tool_called:
-                tool_called_counter.add(1)
+                telemetry.tool_called_counter.add(1)
 
             logger.info("chat_complete", extra={
                 "session_id": session_id,
@@ -201,7 +198,7 @@ def chat(req: ChatRequest):
         except Exception as e:
             request_span.record_exception(e)
             request_span.set_status(StatusCode.ERROR, str(e))
-            chat_error_counter.add(1)
+            telemetry.chat_error_counter.add(1)
             logger.error("chat_error", extra={"error": str(e), "session_id": session_id}, exc_info=True)
             yield "Sorry, something went wrong. Please try again."
 
