@@ -59,7 +59,7 @@ def setup_telemetry() -> None:
     })
 
     phoenix_api_key = os.getenv("PHOENIX_API_KEY", "")
-    auth_headers = {"Authorization": f"Bearer {phoenix_api_key}"} if phoenix_api_key else {}
+    auth_headers = {"api_key": phoenix_api_key} if phoenix_api_key else {}
 
     traces_endpoint = os.getenv(
         "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
